@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.title }} - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="recipe-detail">
+    <div class="recipe-header">
+        <div class="recipe-header-text">
+            <h1>{{ recipe.title }}</h1>
+            {% if recipe.source %}
+            <p class="recipe-source">
+                {% if recipe.url %}
+                <a href="{{ recipe.url }}" target="_blank">{{ recipe.source }}</a>
+                {% else %}
+                {{ recipe.source }}
+                {% endif %}
+            </p>
+            {% endif %}
+
+            {% if recipe.rating %}
+            <div class="recipe-rating large">
+                {% for i in range(5) %}
+                <span class="star {% if i < recipe.rating %}filled{% endif %}">*</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if recipe.tags %}
+            <div class="recipe-tags">
+                {% for tag in recipe.tags %}
+                <a href="{{ url_for('recipes', tag=tag) }}" class="tag">{{ tag }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if recipe.image_url %}
+        <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-detail-image">
+        {% endif %}
+    </div>
+
+    <div class="recipe-actions">
+        <form action="{{ url_for('add_to_plan') }}" method="POST" style="display:inline;">
+            <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+            <button type="submit" class="btn btn-primary">Add to Meal Plan</button>
+        </form>
+        <a href="{{ url_for('add_recipe_page') }}" class="btn btn-secondary">Add Recipe</a>
+        <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}" class="btn btn-secondary">Edit</a>
+        <form action="{{ url_for('delete_recipe_route', recipe_id=recipe.id) }}" method="POST"
+              style="display:inline;" onsubmit="return confirm('Delete this recipe?');">
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+    </div>
+
+    <div class="recipe-content">
+        <div class="recipe-ingredients">
+            <h2>Ingredients</h2>
+            <ul>
+                {% for ingredient in recipe.ingredients %}
+                <li>{{ ingredient.raw if ingredient.raw else ingredient.name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="recipe-instructions">
+            <h2>Instructions</h2>
+            {% if recipe.instructions %}
+            <div class="instructions-text">{{ recipe.instructions | safe }}</div>
+            {% else %}
+            <p class="muted">No instructions saved. <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}">Add them?</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if recipe.notes %}
+    <div class="recipe-notes">
+        <h2>Notes</h2>
+        <p>{{ recipe.notes }}</p>
+    </div>
+    {% endif %}
+
+    {% if recipe.last_made %}
+    <p class="recipe-meta">Last made: {{ recipe.last_made }}</p>
+    {% endif %}
+    <p class="recipe-meta">Added: {{ recipe.date_added[:10] }}</p>
+</div>
+{% endblock %}

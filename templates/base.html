@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Grocery Lists App{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baumans&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="nav-brand">Grocery Lists</a>
+        <div class="nav-links">
+            <a href="{{ url_for('recipes') }}" {% if request.endpoint == 'recipes' %}class="active"{% endif %}>Recipes</a>
+            <a href="{{ url_for('meal_plan') }}" {% if request.endpoint == 'meal_plan' %}class="active"{% endif %}>Meal Plan</a>
+            <a href="{{ url_for('suggest_meals_page') }}" {% if request.endpoint == 'suggest_meals_page' %}class="active"{% endif %}>Suggest</a>
+            <a href="{{ url_for('grocery_list') }}" {% if request.endpoint == 'grocery_list' %}class="active"{% endif %}>Grocery List</a>
+            <a href="{{ url_for('pantry') }}" {% if request.endpoint == 'pantry' %}class="active"{% endif %}>Pantry</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

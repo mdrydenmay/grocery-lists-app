@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ recipe.title }} - Grocery Lists App{% endblock %}
+
+{% block content %}
+<h1>Edit Recipe</h1>
+
+<form method="POST" enctype="multipart/form-data" class="edit-form">
+    <div class="form-group">
+        <label for="title">Recipe Title *</label>
+        <input type="text" id="title" name="title" class="form-input"
+               value="{{ recipe.title }}" required>
+    </div>
+
+    <div class="form-group">
+        <label for="ingredients">Ingredients * <small>(one per line)</small></label>
+        <textarea id="ingredients" name="ingredients" class="form-textarea" rows="10"
+                  required>{{ ingredients_text }}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="instructions">Instructions</label>
+        <textarea id="instructions" name="instructions" class="form-textarea" rows="8">{{ recipe.instructions or '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="tags">Tags <small>(comma separated)</small></label>
+        <input type="text" id="tags" name="tags" class="form-input"
+               value="{{ tags_text }}">
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="rating">Rating</label>
+            <select id="rating" name="rating" class="form-select">
+                <option value="0" {% if not recipe.rating %}selected{% endif %}>No rating</option>
+                <option value="1" {% if recipe.rating == 1 %}selected{% endif %}>1 - Poor</option>
+                <option value="2" {% if recipe.rating == 2 %}selected{% endif %}>2 - Fair</option>
+                <option value="3" {% if recipe.rating == 3 %}selected{% endif %}>3 - Good</option>
+                <option value="4" {% if recipe.rating == 4 %}selected{% endif %}>4 - Great</option>
+                <option value="5" {% if recipe.rating == 5 %}selected{% endif %}>5 - Amazing</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="notes">Notes <small>(cooking tips, modifications, etc.)</small></label>
+        <textarea id="notes" name="notes" class="form-textarea" rows="4"
+                  placeholder="Doubled the garlic. Took 10 min longer than stated...">{{ recipe.notes or '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="image">Photo{% if recipe.image_url %} <small>(current image will be kept if you don't choose a new one)</small>{% endif %}</label>
+        {% if recipe.image_url %}
+        <div style="margin-bottom: 0.5rem;">
+            <img src="{{ recipe.image_url }}" alt="Current image" style="width: 150px; height: 100px; object-fit: cover; border-radius: 8px;">
+        </div>
+        {% endif %}
+        <input type="file" id="image" name="image" accept="image/*" class="form-input">
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

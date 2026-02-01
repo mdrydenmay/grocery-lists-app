@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="home-hero">
+    <div class="hero-icons">
+        <img src="{{ url_for('static', filename='icons/Skillet--Streamline-Plump.png') }}" alt="Skillet" class="hero-icon">
+        <img src="{{ url_for('static', filename='icons/Salad-Vegetable-Diet--Streamline-Plump.png') }}" alt="Salad" class="hero-icon">
+        <img src="{{ url_for('static', filename='icons/Ramen-Dining--Streamline-Plump.png') }}" alt="Ramen" class="hero-icon">
+    </div>
+    <h1>Meal Planning Made Easy</h1>
+    <p>Plan your weekly meals, generate grocery lists, and never forget an ingredient.</p>
+</div>
+
+<div class="home-actions">
+    <a href="{{ url_for('add_recipe_page') }}" class="btn btn-primary btn-large">Add a Recipe</a>
+    <a href="{{ url_for('meal_plan') }}" class="btn btn-secondary btn-large">Plan This Week</a>
+    <a href="{{ url_for('grocery_list') }}" class="btn btn-secondary btn-large">View Grocery List</a>
+</div>
+
+{% if meal_plan %}
+<section class="home-section">
+    <h2>This Week's Meal Plan</h2>
+    <div class="recipe-grid">
+        {% for recipe in meal_plan %}
+        <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card">
+            {% if recipe.image_url %}
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image">
+            {% else %}
+            <div class="recipe-card-image placeholder">No image</div>
+            {% endif %}
+            <div class="recipe-card-content">
+                <h3>{{ recipe.title }}</h3>
+                {% if recipe.source %}
+                <p class="recipe-source">{{ recipe.source }}</p>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <a href="{{ url_for('grocery_list') }}" class="btn btn-primary">Generate Grocery List</a>
+</section>
+{% endif %}
+
+{% if recipes %}
+<section class="home-section">
+    <h2>Recent Recipes</h2>
+    <div class="recipe-grid">
+        {% for recipe in recipes %}
+        <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card">
+            {% if recipe.image_url %}
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image">
+            {% else %}
+            <div class="recipe-card-image placeholder">No image</div>
+            {% endif %}
+            <div class="recipe-card-content">
+                <h3>{{ recipe.title }}</h3>
+                {% if recipe.source %}
+                <p class="recipe-source">{{ recipe.source }}</p>
+                {% endif %}
+                {% if recipe.rating %}
+                <p class="recipe-rating">{'*' * recipe.rating}</p>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <a href="{{ url_for('recipes') }}" class="btn btn-secondary">View All Recipes</a>
+</section>
+{% else %}
+<section class="home-section empty-state">
+    <img src="{{ url_for('static', filename='icons/Chef-Toque-Hat--Streamline-Plump.png') }}" alt="" class="empty-icon">
+    <h2>No Recipes Yet</h2>
+    <p>Start by adding some recipes from your favorite cooking websites or cookbooks.</p>
+    <a href="{{ url_for('add_recipe_page') }}" class="btn btn-primary">Add Your First Recipe</a>
+</section>
+{% endif %}
+{% endblock %}

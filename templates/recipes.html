@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Recipes - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Recipes</h1>
+    <a href="{{ url_for('add_recipe_page') }}" class="btn btn-primary">Add Recipe</a>
+</div>
+
+<div class="filters">
+    <form method="GET" class="search-form">
+        <input type="text" name="search" placeholder="Search recipes..." value="{{ search }}" class="search-input">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if search %}
+        <a href="{{ url_for('recipes') }}" class="btn btn-text">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="tag-filters">
+        <a href="{{ url_for('recipes', favorites='1') }}"
+           class="tag {% if favorites_only %}active{% endif %}">&#9829; Favorites</a>
+        {% if all_tags %}
+        <span>|</span>
+        {% for tag in all_tags %}
+        <a href="{{ url_for('recipes', tag=tag) }}"
+           class="tag {% if current_tag == tag %}active{% endif %}">{{ tag }}</a>
+        {% endfor %}
+        {% endif %}
+        {% if current_tag or favorites_only %}
+        <a href="{{ url_for('recipes') }}" class="btn btn-text">Clear filter</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if recipes %}
+<div class="recipe-grid">
+    {% for recipe in recipes %}
+    <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card">
+        <form action="{{ url_for('toggle_favorite_route', recipe_id=recipe.id) }}"
+              method="POST" class="favorite-form" onclick="event.stopPropagation();">
+            <button type="submit" class="favorite-btn {% if recipe.is_favorite %}active{% endif %}"
+                    title="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                {% if recipe.is_favorite %}&#9829;{% else %}&#9825;{% endif %}
+            </button>
+        </form>
+        {% if recipe.image_url %}
+        <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image">
+        {% else %}
+        <div class="recipe-card-image placeholder">No image</div>
+        {% endif %}
+        <div class="recipe-card-content">
+            <h3>{{ recipe.title }}</h3>
+            {% if recipe.source %}
+            <p class="recipe-source">{{ recipe.source }}</p>
+            {% endif %}
+            {% if recipe.rating %}
+            <p class="recipe-rating">
+                {% for i in range(recipe.rating) %}*{% endfor %}
+            </p>
+            {% endif %}
+            {% if recipe.tags %}
+            <div class="recipe-tags">
+                {% for tag in recipe.tags[:3] %}
+                <span class="tag small">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <img src="{{ url_for('static', filename='icons/Chef-Toque-Hat--Streamline-Plump.png') }}" alt="" class="empty-icon">
+    <p>No recipes found{% if search %} matching "{{ search }}"{% endif %}{% if current_tag %} with tag "{{ current_tag }}"{% endif %}{% if favorites_only %} in favorites{% endif %}.</p>
+    <a href="{{ url_for('add_recipe_page') }}" class="btn btn-primary">Add a Recipe</a>
+</div>
+{% endif %}
+{% endblock %}

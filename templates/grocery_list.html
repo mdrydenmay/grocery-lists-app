@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Grocery List - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Grocery List</h1>
+    <p class="subtitle">Week of {{ week_start }}</p>
+</div>
+
+{% if not plan %}
+<div class="empty-state">
+    <img src="{{ url_for('static', filename='icons/Milk-Carton--Streamline-Plump.png') }}" alt="" class="empty-icon">
+    <p>No recipes in your meal plan for this week.</p>
+    <a href="{{ url_for('meal_plan', week=week_start) }}" class="btn btn-primary">Plan Your Meals</a>
+</div>
+{% else %}
+
+<div class="grocery-header">
+    <p>Based on {{ plan|length }} recipes:
+        {% for recipe in plan %}
+        <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}">{{ recipe.title }}</a>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </p>
+</div>
+
+<div class="grocery-controls">
+    <div class="view-toggle">
+        <button class="btn btn-small active" onclick="showView('category')">By Category</button>
+        <button class="btn btn-small" onclick="showView('store')">By Store</button>
+    </div>
+    <button class="btn btn-primary" onclick="copyToClipboard()">Copy for Google Keep</button>
+</div>
+
+<!-- By Category View -->
+<div id="category-view" class="grocery-view">
+    {% for category, items in grocery_list.by_category.items() %}
+    <div class="grocery-category">
+        <h3>{{ category }}</h3>
+        <ul class="grocery-items">
+            {% for item in items %}
+            <li class="grocery-item">
+                <label>
+                    <input type="checkbox" class="grocery-checkbox">
+                    <span class="item-text">{{ item.raw_variants[0] if item.raw_variants else item.name }}</span>
+                </label>
+                {% if item.store != "Trader Joe's" %}
+                <span class="store-badge {{ item.store|lower|replace(' ', '-')|replace("'", '') }}">{{ item.store }}</span>
+                {% endif %}
+                {% if item.recipes|length > 1 %}
+                <span class="recipe-count">({{ item.recipes|length }} recipes)</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- By Store View -->
+<div id="store-view" class="grocery-view" style="display: none;">
+    {% for store, items in grocery_list.by_store.items() %}
+    <div class="grocery-store">
+        <h3>{{ store }}</h3>
+        <ul class="grocery-items">
+            {% for item in items %}
+            <li class="grocery-item">
+                <label>
+                    <input type="checkbox" class="grocery-checkbox">
+                    <span class="item-text">{{ item.raw_variants[0] if item.raw_variants else item.name }}</span>
+                </label>
+                <span class="category-badge">{{ item.category }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+
+{% if grocery_list.staples_to_check %}
+<div class="grocery-section staples">
+    <h3>Check Pantry (Staples)</h3>
+    <p class="section-note">These are usually stocked - just double-check!</p>
+    <ul class="grocery-items">
+        {% set seen = [] %}
+        {% for item in grocery_list.staples_to_check %}
+        {% if item.name|lower not in seen %}
+        <li class="grocery-item staple">
+            <label>
+                <input type="checkbox" class="grocery-checkbox" checked>
+                <span class="item-text">{{ item.raw }}</span>
+            </label>
+        </li>
+        {% set _ = seen.append(item.name|lower) %}
+        {% endif %}
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if grocery_list.low_staples %}
+<div class="grocery-section low-stock">
+    <h3>Running Low (Restock)</h3>
+    <ul class="grocery-items">
+        {% for item in grocery_list.low_staples %}
+        <li class="grocery-item">
+            <label>
+                <input type="checkbox" class="grocery-checkbox">
+                <span class="item-text">{{ item.ingredient_name }}</span>
+            </label>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if grocery_list.depleted_staples %}
+<div class="grocery-section depleted-stock">
+    <h3>Pantry Restocking (Auto-Added)</h3>
+    <p class="section-note">These quantity-tracked staples ran out and were added to the shopping list above.</p>
+    <ul class="grocery-items">
+        {% for item in grocery_list.depleted_staples %}
+        <li class="grocery-item">
+            <span class="item-text">{{ item.ingredient_name }} (had {{ item.was_quantity }}, need {{ item.needed }})</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Hidden textarea for clipboard -->
+<textarea id="clipboard-text" style="position: absolute; left: -9999px;">
+{% for category, items in grocery_list.by_category.items() %}
+{{ category|upper }}
+{% for item in items %}[ ] {{ item.raw_variants[0] if item.raw_variants else item.name }}{% if item.store != "Trader Joe's" %} ({{ item.store }}){% endif %}
+
+{% endfor %}
+{% endfor %}
+{% if grocery_list.staples_to_check %}
+CHECK PANTRY
+{% set seen = [] %}{% for item in grocery_list.staples_to_check %}{% if item.name|lower not in seen %}[ ] {{ item.raw }}
+{% set _ = seen.append(item.name|lower) %}{% endif %}{% endfor %}
+{% endif %}
+{% if grocery_list.low_staples %}
+RUNNING LOW
+{% for item in grocery_list.low_staples %}[ ] {{ item.ingredient_name }}
+{% endfor %}
+{% endif %}
+</textarea>
+
+{% endif %}
+{% endblock %}

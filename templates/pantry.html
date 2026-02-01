@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Pantry - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Pantry Staples</h1>
+    <p class="subtitle">Items you usually have on hand - these won't auto-add to grocery lists</p>
+</div>
+
+<div class="add-staple-form">
+    <form method="POST" action="{{ url_for('add_pantry_staple') }}" class="inline-form">
+        <input type="text" name="ingredient" placeholder="Add a staple..." class="form-input" required>
+        <select name="category" class="form-select">
+            <option value="Seasonings">Seasonings</option>
+            <option value="Oils & Vinegars">Oils & Vinegars</option>
+            <option value="Baking">Baking</option>
+            <option value="Condiments">Condiments</option>
+            <option value="Dry Goods">Dry Goods</option>
+            <option value="Canned & Jarred">Canned & Jarred</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Other">Other</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+</div>
+
+<div class="pantry-grid">
+    {% for category, staples in grouped_staples.items() %}
+    <div class="pantry-category">
+        <h3>{{ category }}</h3>
+        <ul class="staple-list">
+            {% for staple in staples %}
+            <li class="staple-item {% if staple.is_low %}is-low{% endif %} {% if staple.track_quantity and staple.quantity == 0 %}is-depleted{% endif %}">
+                <span>{{ staple.ingredient_name }}</span>
+                <div style="display:flex; gap:0.25rem; align-items:center;">
+                    {% if staple.track_quantity %}
+                    {# ---- Quantity mode ---- #}
+                    <div class="quantity-controls">
+                        <form action="{{ url_for('update_quantity', staple_id=staple.id) }}" method="POST" class="toggle-form">
+                            <input type="hidden" name="quantity" value="{{ staple.quantity - 1 }}">
+                            <button type="submit" class="btn btn-small btn-text qty-btn" title="Decrement">-</button>
+                        </form>
+                        <span class="quantity-display {% if staple.quantity == 0 %}qty-zero{% endif %}">{{ staple.quantity }}</span>
+                        <form action="{{ url_for('update_quantity', staple_id=staple.id) }}" method="POST" class="toggle-form">
+                            <input type="hidden" name="quantity" value="{{ staple.quantity + 1 }}">
+                            <button type="submit" class="btn btn-small btn-text qty-btn" title="Increment">+</button>
+                        </form>
+                    </div>
+                    <form action="{{ url_for('disable_quantity', staple_id=staple.id) }}" method="POST" class="toggle-form">
+                        <button type="submit" class="btn btn-small btn-text" title="Switch back to OK/LOW mode">QTY</button>
+                    </form>
+                    {% else %}
+                    {# ---- OK/LOW mode (default) ---- #}
+                    <form action="{{ url_for('toggle_low', staple_id=staple.id) }}" method="POST" class="toggle-form">
+                        <button type="submit" class="btn btn-small {% if staple.is_low %}btn-warning{% else %}btn-text{% endif %}"
+                                title="{% if staple.is_low %}Mark as stocked{% else %}Mark as running low{% endif %}">
+                            {% if staple.is_low %}LOW{% else %}OK{% endif %}
+                        </button>
+                    </form>
+                    <form action="{{ url_for('enable_quantity', staple_id=staple.id) }}" method="POST" class="toggle-form">
+                        <button type="submit" class="btn btn-small btn-text" title="Switch to quantity tracking">#</button>
+                    </form>
+                    {% endif %}
+                    <form action="{{ url_for('delete_pantry_staple', staple_id=staple.id) }}" method="POST" class="toggle-form"
+                          onsubmit="return confirm('Remove {{ staple.ingredient_name }} from pantry?');">
+                        <button type="submit" class="btn btn-small btn-text" title="Delete">X</button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="pantry-help">
+    <h3>How it works</h3>
+    <ul>
+        <li>Ingredients marked as staples will show as "Check Pantry" reminders in your grocery list</li>
+        <li>Mark items as "LOW" when you're running out - they'll appear in your grocery list</li>
+        <li>Click "LOW" again to mark as restocked</li>
+        <li>Click "#" next to any item to switch to quantity tracking mode</li>
+        <li>In quantity mode, use +/- to track how many you have. When recipes use up your supply and it hits 0, the item auto-adds to your grocery list</li>
+    </ul>
+</div>
+{% endblock %}

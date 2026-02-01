@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Add Recipe - Grocery Lists App{% endblock %}
+
+{% block content %}
+<h1>Add Recipe</h1>
+
+<div class="add-recipe-options">
+    <div class="option-card">
+        <h2>Import from URL</h2>
+        <p>Paste a recipe URL from Bon Appetit, NYT Cooking, or 40+ other sites.</p>
+        <form method="POST" class="url-form">
+            <input type="url" name="url" placeholder="https://www.bonappetit.com/recipe/..." class="form-input" required>
+            <button type="submit" class="btn btn-primary">Import Recipe</button>
+        </form>
+        <details class="supported-sites">
+            <summary>Supported sites</summary>
+            <ul>
+                <li>Bon Appetit</li>
+                <li>NYT Cooking</li>
+                <li>Serious Eats</li>
+                <li>Food52</li>
+                <li>AllRecipes</li>
+                <li>Epicurious</li>
+                <li>Food Network</li>
+                <li>Simply Recipes</li>
+                <li>Budget Bytes</li>
+                <li>Smitten Kitchen</li>
+                <li>And many more...</li>
+            </ul>
+        </details>
+    </div>
+
+    <div class="option-divider">or</div>
+
+    <div class="option-card">
+        <h2>Add Manually</h2>
+        <p>Enter a recipe from a cookbook or your own creation.</p>
+        <form method="POST" enctype="multipart/form-data" class="manual-form">
+            <div class="form-group">
+                <label for="title">Recipe Title *</label>
+                <input type="text" id="title" name="title" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label for="ingredients">Ingredients * <small>(one per line)</small></label>
+                <textarea id="ingredients" name="ingredients" class="form-textarea" rows="10"
+                          placeholder="2 cups all-purpose flour
+1 tsp salt
+3 large eggs
+..."
+                          required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="instructions">Instructions</label>
+                <textarea id="instructions" name="instructions" class="form-textarea" rows="8"
+                          placeholder="1. Preheat oven to 350F..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags <small>(comma separated)</small></label>
+                <input type="text" id="tags" name="tags" class="form-input"
+                       placeholder="quick, vegetarian, weeknight">
+            </div>
+
+            <div class="form-group">
+                <label for="image">Photo</label>
+                <input type="file" id="image" name="image" accept="image/*" class="form-input">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Recipe</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
