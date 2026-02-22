@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Store Settings - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Store Settings</h1>
+    <p class="subtitle">Manage which store each ingredient is assigned to</p>
+</div>
+
+{% if overrides %}
+<div class="settings-card">
+    <h2>Manual Store Overrides</h2>
+    <p class="section-note">These override the auto-detected store for matching ingredients.</p>
+    <table class="settings-table">
+        <thead>
+            <tr>
+                <th>Ingredient</th>
+                <th>Store</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for override in overrides %}
+            <tr>
+                <td>{{ override.ingredient_pattern }}</td>
+                <td>
+                    <span class="store-badge {{ override.store|lower|replace(' ', '-')|replace("'", '') }}">{{ override.store }}</span>
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('delete_store_override_route', override_id=override.id) }}">
+                        <button type="submit" class="btn btn-danger btn-small">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="settings-card">
+    <h2>Manual Store Overrides</h2>
+    <p class="section-note">No manual overrides yet. You can set them from the <a href="{{ url_for('grocery_list') }}">Grocery List</a> page using the store dropdown next to each item.</p>
+</div>
+{% endif %}
+
+{% if name_overrides %}
+<div class="settings-card">
+    <h2>Ingredient Name Corrections</h2>
+    <p class="section-note">These correct ingredient names that were parsed incorrectly. Corrections apply to future grocery lists automatically.</p>
+    <table class="settings-table">
+        <thead>
+            <tr>
+                <th>Original</th>
+                <th>Corrected</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for override in name_overrides %}
+            <tr>
+                <td>{{ override.original_name }}</td>
+                <td>
+                    {% if override.corrected_qty %}{{ override.corrected_qty|int if override.corrected_qty == override.corrected_qty|int else override.corrected_qty }}{% if override.corrected_unit %} {{ override.corrected_unit }}{% endif %} {% endif %}{{ override.corrected_name }}
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('delete_name_override_route', override_id=override.id) }}">
+                        <button type="submit" class="btn btn-danger btn-small">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="settings-card">
+    <h2>Ingredient Name Corrections</h2>
+    <p class="section-note">No name corrections yet. You can set them from the <a href="{{ url_for('grocery_list') }}">Grocery List</a> page using the edit button next to each item.</p>
+</div>
+{% endif %}
+
+<div class="settings-card">
+    <h2>How It Works</h2>
+    <ul class="settings-help-list">
+        <li>Ingredients are automatically assigned to stores based on built-in patterns (e.g. produce goes to Trader Joe's, salmon goes to Whole Foods)</li>
+        <li>On the Grocery List page, use the dropdown next to any item to change its store</li>
+        <li>Your choice is saved as an override and will apply to future grocery lists</li>
+        <li>Remove an override here to revert to auto-detection</li>
+        <li>Use the pencil button on the Grocery List to correct ingredient names that were parsed incorrectly</li>
+    </ul>
+</div>
+{% endblock %}

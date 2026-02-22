@@ -51,6 +51,14 @@ function copyToClipboard() {
     });
 }
 
+// Toggle inline name edit form
+function toggleNameEdit(id) {
+    var el = document.getElementById('name-edit-' + id);
+    if (el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
 // Save checkbox state to localStorage
 document.addEventListener('DOMContentLoaded', function() {
     const checkboxes = document.querySelectorAll('.grocery-checkbox');

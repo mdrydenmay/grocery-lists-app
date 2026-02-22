@@ -42,14 +42,34 @@
             <li class="grocery-item">
                 <label>
                     <input type="checkbox" class="grocery-checkbox">
-                    <span class="item-text">{{ item.raw_variants[0] if item.raw_variants else item.name }}</span>
+                    <span class="item-text{% if item.has_name_override %} name-corrected{% endif %}">{{ item.display if item.display else item.name }}</span>
                 </label>
-                {% if item.store != "Trader Joe's" %}
-                <span class="store-badge {{ item.store|lower|replace(' ', '-')|replace("'", '') }}">{{ item.store }}</span>
-                {% endif %}
+                <button type="button" class="name-edit-btn" onclick="toggleNameEdit('cat-{{ category|replace(' ', '')|replace('&', '') }}-{{ loop.index0 }}')" title="Edit ingredient name">&#9998;</button>
+                <form method="POST" action="{{ url_for('set_grocery_store') }}" class="store-select-form">
+                    <input type="hidden" name="ingredient_name" value="{{ item.name }}">
+                    <input type="hidden" name="week_start" value="{{ week_start }}">
+                    <select name="store" class="store-select store-select-{{ item.store|lower|replace(' ', '-')|replace("'", '') }}" onchange="this.form.submit()">
+                        <option value="Trader Joe's" {% if item.store == "Trader Joe's" %}selected{% endif %}>TJ's</option>
+                        <option value="Whole Foods" {% if item.store == "Whole Foods" %}selected{% endif %}>Whole Foods</option>
+                        <option value="HMart" {% if item.store == "HMart" %}selected{% endif %}>HMart</option>
+                        <option value="Other" {% if item.store == "Other" %}selected{% endif %}>Other</option>
+                    </select>
+                </form>
                 {% if item.recipes|length > 1 %}
                 <span class="recipe-count">({{ item.recipes|length }} recipes)</span>
                 {% endif %}
+                <div class="name-edit-form" id="name-edit-cat-{{ category|replace(' ', '')|replace('&', '') }}-{{ loop.index0 }}" style="display:none;">
+                    <form method="POST" action="{{ url_for('set_grocery_name') }}">
+                        <input type="hidden" name="original_name" value="{{ item.name }}">
+                        <input type="hidden" name="week_start" value="{{ week_start }}">
+                        <div class="name-edit-row">
+                            <label>Name: <input type="text" name="corrected_name" class="name-edit-input" value="{{ item.name }}" required></label>
+                            <label>Qty: <input type="number" name="corrected_qty" class="name-edit-input name-edit-qty" step="any"></label>
+                            <label>Unit: <input type="text" name="corrected_unit" class="name-edit-input name-edit-unit"></label>
+                            <button type="submit" class="btn btn-primary btn-small">Save</button>
+                        </div>
+                    </form>
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -67,9 +87,22 @@
             <li class="grocery-item">
                 <label>
                     <input type="checkbox" class="grocery-checkbox">
-                    <span class="item-text">{{ item.raw_variants[0] if item.raw_variants else item.name }}</span>
+                    <span class="item-text{% if item.has_name_override %} name-corrected{% endif %}">{{ item.display if item.display else item.name }}</span>
                 </label>
+                <button type="button" class="name-edit-btn" onclick="toggleNameEdit('store-{{ store|replace(' ', '')|replace("'", '') }}-{{ loop.index0 }}')" title="Edit ingredient name">&#9998;</button>
                 <span class="category-badge">{{ item.category }}</span>
+                <div class="name-edit-form" id="name-edit-store-{{ store|replace(' ', '')|replace("'", '') }}-{{ loop.index0 }}" style="display:none;">
+                    <form method="POST" action="{{ url_for('set_grocery_name') }}">
+                        <input type="hidden" name="original_name" value="{{ item.name }}">
+                        <input type="hidden" name="week_start" value="{{ week_start }}">
+                        <div class="name-edit-row">
+                            <label>Name: <input type="text" name="corrected_name" class="name-edit-input" value="{{ item.name }}" required></label>
+                            <label>Qty: <input type="number" name="corrected_qty" class="name-edit-input name-edit-qty" step="any"></label>
+                            <label>Unit: <input type="text" name="corrected_unit" class="name-edit-input name-edit-unit"></label>
+                            <button type="submit" class="btn btn-primary btn-small">Save</button>
+                        </div>
+                    </form>
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -132,7 +165,7 @@
 <textarea id="clipboard-text" style="position: absolute; left: -9999px;">
 {% for category, items in grocery_list.by_category.items() %}
 {{ category|upper }}
-{% for item in items %}[ ] {{ item.raw_variants[0] if item.raw_variants else item.name }}{% if item.store != "Trader Joe's" %} ({{ item.store }}){% endif %}
+{% for item in items %}[ ] {{ item.display if item.display else item.name }}{% if item.store != "Trader Joe's" %} ({{ item.store }}){% endif %}
 
 {% endfor %}
 {% endfor %}

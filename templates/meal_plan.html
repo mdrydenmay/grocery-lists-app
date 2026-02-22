@@ -58,7 +58,7 @@
         <div class="recipe-list-item">
             <div class="recipe-info">
                 {% if recipe.image_url %}
-                <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-thumb">
+                <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-thumb" loading="lazy">
                 {% endif %}
                 <div>
                     <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}">{{ recipe.title }}</a>

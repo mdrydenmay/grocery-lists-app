@@ -77,6 +77,26 @@ def init_db():
         )
     ''')
 
+    # Ingredient store overrides (manual store assignments)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ingredient_store_overrides (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ingredient_pattern TEXT NOT NULL UNIQUE,
+            store TEXT NOT NULL
+        )
+    ''')
+
+    # Ingredient name overrides (manual name corrections)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ingredient_name_overrides (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_name TEXT NOT NULL UNIQUE,
+            corrected_name TEXT NOT NULL,
+            corrected_qty REAL,
+            corrected_unit TEXT
+        )
+    ''')
+
     conn.commit()
 
     # Meal pairings table (for tracking main+side combos)
@@ -110,11 +130,86 @@ def init_db():
         cursor.execute("ALTER TABLE recipes ADD COLUMN is_favorite INTEGER DEFAULT 0")
     conn.commit()
 
+    # Migrate: add missing ingredient category patterns
+    _add_missing_categories(conn)
+
     # Seed with initial data if tables are empty
     _seed_staples(conn)
     _seed_ingredient_categories(conn)
 
     conn.close()
+
+def _add_missing_categories(conn):
+    """Add ingredient category patterns that may be missing from older databases."""
+    cursor = conn.cursor()
+    extra_patterns = [
+        # Produce items commonly missing
+        ("fennel", "Produce", "Trader Joe's"),
+        ("shallot", "Produce", "Trader Joe's"),
+        ("arugula", "Produce", "Trader Joe's"),
+        ("endive", "Produce", "Trader Joe's"),
+        ("brussels sprout", "Produce", "Trader Joe's"),
+        ("cabbage", "Produce", "Trader Joe's"),
+        ("squash", "Produce", "Trader Joe's"),
+        ("pumpkin", "Produce", "Trader Joe's"),
+        ("persimmon", "Produce", "Trader Joe's"),
+        ("pear", "Produce", "Trader Joe's"),
+        ("peach", "Produce", "Trader Joe's"),
+        ("plum", "Produce", "Trader Joe's"),
+        ("grape", "Produce", "Trader Joe's"),
+        ("mango", "Produce", "Trader Joe's"),
+        ("pineapple", "Produce", "Trader Joe's"),
+        ("asparagus", "Produce", "Trader Joe's"),
+        ("corn", "Produce", "Trader Joe's"),
+        ("pea", "Produce", "Trader Joe's"),
+        ("snap pea", "Produce", "Trader Joe's"),
+        ("snow pea", "Produce", "Trader Joe's"),
+        ("green bean", "Produce", "Trader Joe's"),
+        ("radish", "Produce", "Trader Joe's"),
+        ("beet", "Produce", "Trader Joe's"),
+        ("turnip", "Produce", "Trader Joe's"),
+        ("sweet potato", "Produce", "Trader Joe's"),
+        ("eggplant", "Produce", "Trader Joe's"),
+        ("artichoke", "Produce", "Trader Joe's"),
+        ("leek", "Produce", "Trader Joe's"),
+        ("chili", "Produce", "Trader Joe's"),
+        ("jalapeno", "Produce", "Trader Joe's"),
+        ("serrano", "Produce", "Trader Joe's"),
+        ("turmeric", "Seasonings", "Trader Joe's"),
+        ("dill", "Produce", "Trader Joe's"),
+        ("rosemary", "Produce", "Trader Joe's"),
+        ("sage", "Produce", "Trader Joe's"),
+        ("thyme", "Produce", "Trader Joe's"),
+        # Dried fruit / pantry produce
+        ("apricot", "Produce", "Trader Joe's"),
+        ("olive", "Produce", "Trader Joe's"),
+        # Nuts & snacks
+        ("walnut", "Dry Goods", "Trader Joe's"),
+        ("almond", "Dry Goods", "Trader Joe's"),
+        ("pecan", "Dry Goods", "Trader Joe's"),
+        ("cashew", "Dry Goods", "Trader Joe's"),
+        ("pistachio", "Dry Goods", "Trader Joe's"),
+        ("pine nut", "Dry Goods", "Trader Joe's"),
+        ("breadcrumb", "Dry Goods", "Trader Joe's"),
+        ("lasagna", "Dry Goods", "Trader Joe's"),
+        ("noodle", "Dry Goods", "Trader Joe's"),
+        ("yeast", "Baking", "Trader Joe's"),
+        # Seafood
+        ("anchovy", "Meat & Seafood", "Whole Foods"),
+        ("mackerel", "Meat & Seafood", "Whole Foods"),
+        ("trout", "Meat & Seafood", "Whole Foods"),
+        # Asian produce
+        ("makrut", "Produce", "HMart"),
+        ("bird's eye", "Produce", "HMart"),
+        # Dairy additions
+        ("labneh", "Dairy", "Whole Foods"),
+        ("pecorino", "Dairy", "Trader Joe's"),
+    ]
+    cursor.executemany(
+        "INSERT OR IGNORE INTO ingredient_categories (pattern, category, store_preference) VALUES (?, ?, ?)",
+        extra_patterns
+    )
+    conn.commit()
 
 def _seed_staples(conn):
     """Seed pantry staples if table is empty."""
@@ -582,10 +677,13 @@ def suggest_meals(num_meals=5, constraints=None, exclude_ids=None):
 
             best_pair, best_score = find_best_pair(tagged_mains, available_sides)
             if best_pair:
+                pair_data = pairing_lookup.get((best_pair[0]['id'], best_pair[1]['id']))
                 suggestions.append({
                     'main': best_pair[0],
                     'side': best_pair[1],
-                    'score': best_score
+                    'score': best_score,
+                    'past_pairing': pair_data is not None,
+                    'times_paired': pair_data['times_paired'] if pair_data else 0
                 })
                 used_main_ids.add(best_pair[0]['id'])
                 used_side_ids.add(best_pair[1]['id'])
@@ -603,10 +701,13 @@ def suggest_meals(num_meals=5, constraints=None, exclude_ids=None):
 
         best_pair, best_score = find_best_pair(available_mains, available_sides)
         if best_pair:
+            pair_data = pairing_lookup.get((best_pair[0]['id'], best_pair[1]['id']))
             suggestions.append({
                 'main': best_pair[0],
                 'side': best_pair[1],
-                'score': best_score
+                'score': best_score,
+                'past_pairing': pair_data is not None,
+                'times_paired': pair_data['times_paired'] if pair_data else 0
             })
             used_main_ids.add(best_pair[0]['id'])
             used_side_ids.add(best_pair[1]['id'])
@@ -625,17 +726,32 @@ def get_staples():
     return [dict(row) for row in rows]
 
 def is_staple(ingredient_name):
-    """Check if an ingredient is a pantry staple."""
+    """Check if an ingredient is a pantry staple using word-boundary matching."""
+    import re
     conn = get_db()
     cursor = conn.cursor()
     normalized = ingredient_name.lower().strip()
+
+    # Exact match first
     cursor.execute(
-        "SELECT 1 FROM pantry_staples WHERE LOWER(ingredient_name) = ? OR ? LIKE '%' || LOWER(ingredient_name) || '%'",
-        (normalized, normalized)
+        "SELECT 1 FROM pantry_staples WHERE LOWER(ingredient_name) = ?",
+        (normalized,)
     )
-    result = cursor.fetchone() is not None
+    if cursor.fetchone():
+        conn.close()
+        return True
+
+    # Word-boundary match: check if any staple name appears as whole words
+    cursor.execute("SELECT ingredient_name FROM pantry_staples")
+    rows = cursor.fetchall()
     conn.close()
-    return result
+
+    for row in rows:
+        staple = row['ingredient_name'].lower()
+        # Use word boundaries so "butter" doesn't match "butternut"
+        if re.search(r'\b' + re.escape(staple) + r'\b', normalized):
+            return True
+    return False
 
 def add_staple(ingredient_name, category="Other"):
     """Add a new pantry staple."""
@@ -702,18 +818,31 @@ def set_staple_quantity(staple_id, quantity):
 
 def get_quantity_staple_by_name(ingredient_name):
     """If ingredient matches a quantity-tracked staple, return it. Otherwise None."""
+    import re
     conn = get_db()
     cursor = conn.cursor()
     normalized = ingredient_name.lower().strip()
+
+    # Exact match first
     cursor.execute(
-        """SELECT * FROM pantry_staples
-           WHERE track_quantity = 1
-           AND (LOWER(ingredient_name) = ? OR ? LIKE '%' || LOWER(ingredient_name) || '%')""",
-        (normalized, normalized)
+        "SELECT * FROM pantry_staples WHERE track_quantity = 1 AND LOWER(ingredient_name) = ?",
+        (normalized,)
     )
     row = cursor.fetchone()
+    if row:
+        conn.close()
+        return dict(row)
+
+    # Word-boundary match
+    cursor.execute("SELECT * FROM pantry_staples WHERE track_quantity = 1")
+    rows = cursor.fetchall()
     conn.close()
-    return dict(row) if row else None
+
+    for row in rows:
+        staple = row['ingredient_name'].lower()
+        if re.search(r'\b' + re.escape(staple) + r'\b', normalized):
+            return dict(row)
+    return None
 
 def decrement_staple_quantity(staple_id, amount=1):
     """Decrement a staple's quantity, flooring at 0."""
@@ -746,23 +875,123 @@ def mark_grocery_list_generated(week_start):
     conn.commit()
     conn.close()
 
-# Ingredient categorization
+# Store overrides
 
-def get_ingredient_category(ingredient_name):
-    """Get the category and store preference for an ingredient."""
+def set_store_override(ingredient_name, store):
+    """Upsert a manual store override for an ingredient pattern."""
     conn = get_db()
     cursor = conn.cursor()
-    normalized = ingredient_name.lower()
-
+    pattern = ingredient_name.lower().strip()
     cursor.execute(
-        "SELECT category, store_preference FROM ingredient_categories WHERE ? LIKE '%' || pattern || '%' ORDER BY LENGTH(pattern) DESC LIMIT 1",
+        """INSERT INTO ingredient_store_overrides (ingredient_pattern, store)
+           VALUES (?, ?)
+           ON CONFLICT(ingredient_pattern)
+           DO UPDATE SET store = ?""",
+        (pattern, store, store)
+    )
+    conn.commit()
+    conn.close()
+
+def get_store_overrides():
+    """Return all manual store overrides."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM ingredient_store_overrides ORDER BY ingredient_pattern")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def delete_store_override(override_id):
+    """Remove a store override by ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM ingredient_store_overrides WHERE id = ?", (override_id,))
+    conn.commit()
+    conn.close()
+
+# Name overrides
+
+def set_name_override(original_name, corrected_name, corrected_qty=None, corrected_unit=None):
+    """Upsert a name correction override for an ingredient."""
+    conn = get_db()
+    cursor = conn.cursor()
+    key = original_name.lower().strip()
+    cursor.execute(
+        """INSERT INTO ingredient_name_overrides (original_name, corrected_name, corrected_qty, corrected_unit)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(original_name)
+           DO UPDATE SET corrected_name = ?, corrected_qty = ?, corrected_unit = ?""",
+        (key, corrected_name.strip(), corrected_qty, corrected_unit or None,
+         corrected_name.strip(), corrected_qty, corrected_unit or None)
+    )
+    conn.commit()
+    conn.close()
+
+def get_name_overrides():
+    """Return all ingredient name overrides."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM ingredient_name_overrides ORDER BY original_name")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def delete_name_override(override_id):
+    """Remove a name override by ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM ingredient_name_overrides WHERE id = ?", (override_id,))
+    conn.commit()
+    conn.close()
+
+def apply_name_override(parsed_name):
+    """Look up a name override. Returns dict with corrected fields, or None."""
+    conn = get_db()
+    cursor = conn.cursor()
+    normalized = parsed_name.lower().strip()
+    cursor.execute(
+        "SELECT corrected_name, corrected_qty, corrected_unit FROM ingredient_name_overrides WHERE original_name = ?",
         (normalized,)
     )
     row = cursor.fetchone()
     conn.close()
-
     if row:
-        return {'category': row['category'], 'store': row['store_preference']}
+        return {
+            'corrected_name': row['corrected_name'],
+            'corrected_qty': row['corrected_qty'],
+            'corrected_unit': row['corrected_unit']
+        }
+    return None
+
+# Ingredient categorization
+
+def get_ingredient_category(ingredient_name):
+    """Get the category and store preference for an ingredient.
+    Checks manual store overrides first, then falls back to auto-detection."""
+    conn = get_db()
+    cursor = conn.cursor()
+    normalized = ingredient_name.lower()
+
+    # Check manual overrides first
+    cursor.execute(
+        "SELECT store FROM ingredient_store_overrides WHERE ? LIKE '%' || ingredient_pattern || '%' ORDER BY LENGTH(ingredient_pattern) DESC LIMIT 1",
+        (normalized,)
+    )
+    override_row = cursor.fetchone()
+
+    # Get category from ingredient_categories (always needed)
+    cursor.execute(
+        "SELECT category, store_preference FROM ingredient_categories WHERE ? LIKE '%' || pattern || '%' ORDER BY LENGTH(pattern) DESC LIMIT 1",
+        (normalized,)
+    )
+    cat_row = cursor.fetchone()
+    conn.close()
+
+    category = cat_row['category'] if cat_row else 'Other'
+    if override_row:
+        return {'category': category, 'store': override_row['store']}
+    if cat_row:
+        return {'category': category, 'store': cat_row['store_preference']}
     return {'category': 'Other', 'store': "Trader Joe's"}
 
 # Meal plan operations

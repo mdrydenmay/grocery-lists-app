@@ -4,8 +4,10 @@ Grocery list generator - creates organized shopping lists from meal plans.
 
 from database import (
     is_staple, get_ingredient_category, get_staples,
-    get_quantity_staple_by_name, decrement_staple_quantity
+    get_quantity_staple_by_name, decrement_staple_quantity,
+    apply_name_override
 )
+from recipe_parser import parse_ingredient_parts
 
 
 def generate_grocery_list(meal_plan_recipes, apply_decrements=True):
@@ -32,16 +34,32 @@ def generate_grocery_list(meal_plan_recipes, apply_decrements=True):
     for recipe in meal_plan_recipes:
         for ingredient in recipe.get('ingredients', []):
             raw = ingredient.get('raw', ingredient.get('name', ''))
-            name = ingredient.get('name', raw)
+
+            # Always re-parse from raw text to ensure consistent
+            # name/qty/unit even for old recipes without parsed fields
+            parts = parse_ingredient_parts(raw)
+
+            # Apply name override if one exists
+            override = apply_name_override(parts['name'])
+            if override:
+                parts['name'] = override['corrected_name']
+                if override.get('corrected_qty') is not None:
+                    parts['qty'] = override['corrected_qty']
+                if override.get('corrected_unit') is not None:
+                    parts['unit'] = override['corrected_unit']
 
             item = {
                 'raw': raw,
-                'name': name,
+                'name': parts['name'],
+                'qty': parts['qty'],
+                'unit': parts['unit'],
                 'recipe': recipe['title'],
-                'recipe_id': recipe['id']
+                'recipe_id': recipe['id'],
+                'has_name_override': override is not None
             }
 
-            # Check if it's a staple
+            # Check if it's a staple using parsed name
+            name = parts['name']
             if is_staple(name):
                 # Check if this staple uses quantity tracking
                 qty_staple = get_quantity_staple_by_name(name)
@@ -153,20 +171,27 @@ def generate_grocery_list(meal_plan_recipes, apply_decrements=True):
 
 def _merge_ingredients(ingredients):
     """
-    Merge duplicate ingredients, keeping track of which recipes need them.
+    Merge duplicate ingredients with quantity-aware combining.
+    Groups by normalized name, sums quantities when units match,
+    and builds a display string for each merged item.
     """
     merged = {}
 
     for item in ingredients:
-        # Use lowercase name as key
         key = item['name'].lower().strip()
 
         if key in merged:
-            # Add recipe to existing item
             existing = merged[key]
             if item['recipe'] not in existing['recipes']:
                 existing['recipes'].append(item['recipe'])
                 existing['raw_variants'].append(item['raw'])
+            # Accumulate quantities
+            existing['qty_entries'].append({
+                'qty': item.get('qty', 0) or 0,
+                'unit': (item.get('unit', '') or '').lower().strip()
+            })
+            if item.get('has_name_override'):
+                existing['has_name_override'] = True
         else:
             merged[key] = {
                 'name': item['name'],
@@ -174,10 +199,60 @@ def _merge_ingredients(ingredients):
                 'raw_variants': [item['raw']],
                 'recipes': [item['recipe']],
                 'category': item['category'],
-                'store': item['store']
+                'store': item['store'],
+                'has_name_override': item.get('has_name_override', False),
+                'qty_entries': [{
+                    'qty': item.get('qty', 0) or 0,
+                    'unit': (item.get('unit', '') or '').lower().strip()
+                }]
             }
 
-    return list(merged.values())
+    # Build display text for each merged item
+    result = []
+    for item in merged.values():
+        item['display'] = _build_display(item['name'], item['qty_entries'])
+        del item['qty_entries']
+        result.append(item)
+
+    return result
+
+
+def _build_display(name, qty_entries):
+    """Build a human-readable display string from merged quantity entries."""
+    # Group quantities by unit
+    by_unit = {}
+    for entry in qty_entries:
+        u = entry['unit']
+        if u not in by_unit:
+            by_unit[u] = 0.0
+        by_unit[u] += entry['qty']
+
+    # Remove zero-quantity no-unit entries if we have real quantities
+    if '' in by_unit and by_unit[''] == 0.0 and len(by_unit) > 1:
+        del by_unit['']
+
+    # If all quantities are zero (no parsed qty info), just show the name
+    if all(q == 0.0 for q in by_unit.values()):
+        if len(qty_entries) > 1:
+            return f"{name} (x{len(qty_entries)})"
+        return name
+
+    parts = []
+    for unit, total in by_unit.items():
+        # Format the number nicely (no trailing .0)
+        if total == int(total):
+            qty_str = str(int(total))
+        else:
+            qty_str = f"{total:.1f}".rstrip('0').rstrip('.')
+        if unit:
+            parts.append(f"{qty_str} {unit}")
+        else:
+            parts.append(qty_str)
+
+    if len(parts) == 1:
+        return f"{parts[0]} {name}"
+    else:
+        return f"{name} ({' + '.join(parts)})"
 
 
 def _get_low_staples():
@@ -205,10 +280,7 @@ def format_for_clipboard(grocery_data, group_by='category'):
         lines.append(f"\n{group_name.upper()}")
         lines.append("-" * len(group_name))
         for item in items:
-            # Show the original ingredient text
-            raw_texts = item.get('raw_variants', [item['raw']])
-            # If multiple recipes need this, show the most descriptive version
-            display_text = max(raw_texts, key=len) if raw_texts else item['name']
+            display_text = item.get('display', item['name'])
             lines.append(f"[ ] {display_text}")
 
     # Add staples reminder

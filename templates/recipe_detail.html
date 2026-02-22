@@ -40,6 +40,12 @@
     </div>
 
     <div class="recipe-actions">
+        <form action="{{ url_for('toggle_favorite_route', recipe_id=recipe.id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="favorite-btn detail {% if recipe.is_favorite %}active{% endif %}"
+                    title="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                {% if recipe.is_favorite %}&#9829;{% else %}&#9825;{% endif %}
+            </button>
+        </form>
         <form action="{{ url_for('add_to_plan') }}" method="POST" style="display:inline;">
             <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
             <button type="submit" class="btn btn-primary">Add to Meal Plan</button>

@@ -937,6 +937,324 @@ h1, h2, h3 {
     margin-bottom: 1rem;
 }
 
+/* ============== Favorites ============== */
+.favorite-form {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+}
+
+.recipe-card {
+    position: relative;
+}
+
+.favorite-btn {
+    background: rgba(255, 249, 240, 0.85);
+    border: none;
+    cursor: pointer;
+    font-size: 1.35rem;
+    line-height: 1;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #B09D85;
+    transition: color 0.2s, background 0.2s;
+}
+
+.favorite-btn:hover {
+    color: #EE3823;
+    background: rgba(255, 249, 240, 1);
+}
+
+.favorite-btn.active {
+    color: #EE3823;
+}
+
+.favorite-btn.detail {
+    font-size: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: #F8ECD8;
+}
+
+.favorite-btn.detail:hover {
+    background: #F0EF95;
+}
+
+.favorite-indicator {
+    color: #EE3823;
+    font-size: 0.85rem;
+    margin-left: 0.25rem;
+}
+
+/* ============== Suggestions ============== */
+.suggest-form-card {
+    background: #FFF9F0;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 2px solid #DDD0BC;
+    margin-bottom: 2rem;
+}
+
+.suggest-form-top {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.constraint-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.constraint-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.constraint-input {
+    width: 60px !important;
+    text-align: center;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.9rem !important;
+}
+
+.suggestion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.suggestion-card {
+    background: #FFF9F0;
+    border-radius: 16px;
+    border: 2px solid #DDD0BC;
+    padding: 1.25rem;
+    position: relative;
+}
+
+.suggestion-label {
+    display: inline-block;
+    font-family: 'Baumans', sans-serif;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #B24D00;
+    margin-bottom: 0.75rem;
+}
+
+.suggestion-recipe {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.suggestion-recipe + .suggestion-recipe {
+    border-top: 1px solid #EDE4D4;
+}
+
+.suggestion-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.suggestion-recipe a {
+    font-weight: 600;
+}
+
+.suggestion-type {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7a6a55;
+}
+
+.pairing-badge {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #024DA1;
+    font-weight: 600;
+}
+
+/* ============== Store Select (Inline Dropdown) ============== */
+.store-select-form {
+    display: inline;
+}
+
+.store-select {
+    font-size: 0.625rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 30px;
+    border: 1.5px solid #DDD0BC;
+    background: #FFF9F0;
+    color: #7a6a55;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 1rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%237a6a55'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.3rem center;
+}
+
+.store-select:focus {
+    outline: none;
+    border-color: #024DA1;
+}
+
+.store-select-whole-foods {
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.store-select-hmart {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.store-select-other {
+    background-color: #EDE4D4;
+    color: #7a6a55;
+    border-color: #DDD0BC;
+}
+
+/* ============== Settings Page ============== */
+.settings-card {
+    background: #FFF9F0;
+    padding: 1.5rem 2rem;
+    border-radius: 16px;
+    border: 2px solid #DDD0BC;
+    margin-bottom: 1.5rem;
+}
+
+.settings-card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.settings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.settings-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7a6a55;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid #DDD0BC;
+}
+
+.settings-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #EDE4D4;
+    vertical-align: middle;
+}
+
+.settings-table td:last-child {
+    text-align: right;
+}
+
+.settings-help-list {
+    padding-left: 1.5rem;
+    color: #7a6a55;
+    line-height: 1.8;
+}
+
+/* ============== Name Edit (Inline) ============== */
+.name-edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #B09D85;
+    padding: 0.1rem 0.25rem;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.name-edit-btn:hover {
+    color: #024DA1;
+    background: #EDE4D4;
+}
+
+.name-edit-form {
+    width: 100%;
+    margin-top: 0.35rem;
+    padding: 0.6rem 0.75rem;
+    background: #F8ECD8;
+    border-radius: 10px;
+    border: 1.5px solid #DDD0BC;
+}
+
+.name-edit-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.name-edit-row label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #7a6a55;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: default;
+}
+
+.name-edit-input {
+    padding: 0.35rem 0.5rem;
+    border: 1.5px solid #DDD0BC;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    background: #FFF9F0;
+    color: #333;
+    width: 120px;
+    margin-top: 0.2rem;
+}
+
+.name-edit-input:focus {
+    outline: none;
+    border-color: #024DA1;
+}
+
+.name-edit-qty {
+    width: 60px;
+}
+
+.name-edit-unit {
+    width: 70px;
+}
+
+.name-corrected {
+    border-bottom: 1.5px dotted #024DA1;
+}
+
 /* ============== Utility ============== */
 hr {
     border: none;

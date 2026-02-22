@@ -16,25 +16,40 @@ from database import (
     has_grocery_list_been_generated, mark_grocery_list_generated,
     record_pairings_from_meal_plan, suggest_meals,
     get_ingredient_category, get_meal_plan, add_to_meal_plan,
-    remove_from_meal_plan, clear_meal_plan, get_week_start
+    remove_from_meal_plan, clear_meal_plan, get_week_start,
+    set_store_override, get_store_overrides, delete_store_override,
+    set_name_override, get_name_overrides, delete_name_override
 )
-from recipe_parser import parse_recipe_url
+from recipe_parser import parse_recipe_url, parse_ingredient_parts
 from grocery_generator import generate_grocery_list
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-in-production'
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-key-change-in-production')
 
 UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+MAX_IMAGE_WIDTH = 800
+
 def _save_upload(file):
-    """Save an uploaded image and return its URL path, or None."""
+    """Save an uploaded image, resize if too large, and return its URL path."""
     if file and file.filename:
         ext = file.filename.rsplit('.', 1)[-1].lower()
         if ext in ALLOWED_EXTENSIONS:
+            from PIL import Image
+            img = Image.open(file)
+            # Convert RGBA to RGB for JPEG
+            if img.mode in ('RGBA', 'P') and ext in ('jpg', 'jpeg'):
+                img = img.convert('RGB')
+            # Resize if wider than MAX_IMAGE_WIDTH
+            if img.width > MAX_IMAGE_WIDTH:
+                ratio = MAX_IMAGE_WIDTH / img.width
+                new_size = (MAX_IMAGE_WIDTH, int(img.height * ratio))
+                img = img.resize(new_size, Image.LANCZOS)
             filename = f"{uuid.uuid4().hex}.{ext}"
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
+            save_path = os.path.join(UPLOAD_FOLDER, filename)
+            img.save(save_path, quality=80, optimize=True)
             return url_for('static', filename=f'uploads/{filename}')
     return None
 
@@ -125,7 +140,13 @@ def add_recipe_page():
             for line in ingredients_text.split('\n'):
                 line = line.strip()
                 if line:
-                    ingredients.append({'raw': line, 'name': line})
+                    parts = parse_ingredient_parts(line)
+                    ingredients.append({
+                        'raw': line,
+                        'name': parts['name'],
+                        'qty': parts['qty'],
+                        'unit': parts['unit']
+                    })
 
             # Parse tags (comma separated)
             tags = [t.strip() for t in tags_text.split(',') if t.strip()]
@@ -165,7 +186,13 @@ def edit_recipe(recipe_id):
         for line in ingredients_text.split('\n'):
             line = line.strip()
             if line:
-                ingredients.append({'raw': line, 'name': line})
+                parts = parse_ingredient_parts(line)
+                ingredients.append({
+                    'raw': line,
+                    'name': parts['name'],
+                    'qty': parts['qty'],
+                    'unit': parts['unit']
+                })
 
         # Parse tags
         tags = [t.strip() for t in tags_text.split(',') if t.strip()]
@@ -268,6 +295,54 @@ def grocery_list():
 
     return render_template('grocery_list.html',
                          grocery_list=grocery_data, week_start=week_start, plan=plan)
+
+@app.route('/grocery/set-store', methods=['POST'])
+def set_grocery_store():
+    """Set a manual store override for an ingredient."""
+    ingredient_name = request.form.get('ingredient_name', '').strip()
+    store = request.form.get('store', '').strip()
+    week_start = request.form.get('week_start', get_week_start())
+    if ingredient_name and store:
+        set_store_override(ingredient_name, store)
+    return redirect(url_for('grocery_list', week=week_start))
+
+@app.route('/grocery/set-name', methods=['POST'])
+def set_grocery_name():
+    """Set a name correction override for an ingredient."""
+    original_name = request.form.get('original_name', '').strip()
+    corrected_name = request.form.get('corrected_name', '').strip()
+    corrected_qty = request.form.get('corrected_qty', '').strip()
+    corrected_unit = request.form.get('corrected_unit', '').strip()
+    week_start = request.form.get('week_start', get_week_start())
+    if original_name and corrected_name:
+        qty = float(corrected_qty) if corrected_qty else None
+        unit = corrected_unit if corrected_unit else None
+        set_name_override(original_name, corrected_name, qty, unit)
+    return redirect(url_for('grocery_list', week=week_start))
+
+# ============== Store Settings ==============
+
+@app.route('/settings/stores')
+def store_settings():
+    """View and manage store assignment and name correction overrides."""
+    overrides = get_store_overrides()
+    name_overrides = get_name_overrides()
+    return render_template('store_settings.html', overrides=overrides,
+                         name_overrides=name_overrides)
+
+@app.route('/settings/stores/delete/<int:override_id>', methods=['POST'])
+def delete_store_override_route(override_id):
+    """Delete a store override."""
+    delete_store_override(override_id)
+    flash('Store override removed')
+    return redirect(url_for('store_settings'))
+
+@app.route('/settings/names/delete/<int:override_id>', methods=['POST'])
+def delete_name_override_route(override_id):
+    """Delete a name correction override."""
+    delete_name_override(override_id)
+    flash('Name correction removed')
+    return redirect(url_for('store_settings'))
 
 # ============== Pantry ==============
 

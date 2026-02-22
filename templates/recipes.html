@@ -45,7 +45,7 @@
             </button>
         </form>
         {% if recipe.image_url %}
-        <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image">
+        <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image" loading="lazy">
         {% else %}
         <div class="recipe-card-image placeholder">No image</div>
         {% endif %}

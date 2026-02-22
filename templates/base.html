@@ -18,6 +18,7 @@
             <a href="{{ url_for('suggest_meals_page') }}" {% if request.endpoint == 'suggest_meals_page' %}class="active"{% endif %}>Suggest</a>
             <a href="{{ url_for('grocery_list') }}" {% if request.endpoint == 'grocery_list' %}class="active"{% endif %}>Grocery List</a>
             <a href="{{ url_for('pantry') }}" {% if request.endpoint == 'pantry' %}class="active"{% endif %}>Pantry</a>
+            <a href="{{ url_for('store_settings') }}" {% if request.endpoint == 'store_settings' %}class="active"{% endif %}>Settings</a>
         </div>
     </nav>
 

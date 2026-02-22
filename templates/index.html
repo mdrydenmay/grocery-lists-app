@@ -26,7 +26,7 @@
         {% for recipe in meal_plan %}
         <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card">
             {% if recipe.image_url %}
-            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image">
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image" loading="lazy">
             {% else %}
             <div class="recipe-card-image placeholder">No image</div>
             {% endif %}
@@ -50,7 +50,7 @@
         {% for recipe in recipes %}
         <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card">
             {% if recipe.image_url %}
-            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image">
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-card-image" loading="lazy">
             {% else %}
             <div class="recipe-card-image placeholder">No image</div>
             {% endif %}

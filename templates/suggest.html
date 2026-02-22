@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Meal Suggestions - Grocery Lists App{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Meal Suggestions</h1>
+</div>
+
+{% if main_count == 0 or side_count == 0 %}
+<div class="empty-state">
+    <img src="{{ url_for('static', filename='icons/Chef-Toque-Hat--Streamline-Plump.png') }}" alt="" class="empty-icon">
+    <p>You need recipes tagged as <strong>"main"</strong> and <strong>"side"</strong> to use suggestions.</p>
+    <p class="subtitle">You have {{ main_count }} main{{ 's' if main_count != 1 }} and {{ side_count }} side{{ 's' if side_count != 1 }}.</p>
+    <a href="{{ url_for('recipes') }}" class="btn btn-primary">Go to Recipes</a>
+</div>
+{% else %}
+
+<div class="suggest-form-card">
+    <form method="POST">
+        <div class="suggest-form-top">
+            <div class="form-group">
+                <label for="num_meals">Number of meals this week</label>
+                <input type="number" id="num_meals" name="num_meals" min="1" max="14"
+                       value="{{ num_meals }}" class="form-input" style="max-width: 100px;">
+            </div>
+
+            {% if constraint_tags %}
+            <div class="form-group">
+                <label>Constraints <small>(how many of each type?)</small></label>
+                <div class="constraint-grid">
+                    {% for tag in constraint_tags %}
+                    <div class="constraint-item">
+                        <span class="tag">{{ tag }}</span>
+                        <input type="number" name="tag_{{ tag }}" min="0" max="14"
+                               value="{{ constraints.get(tag, 0) }}" class="form-input constraint-input">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">Suggest Meals</button>
+            <span class="subtitle">{{ main_count }} mains &middot; {{ side_count }} sides available</span>
+        </div>
+    </form>
+</div>
+
+{% if suggestions %}
+<hr>
+
+<form action="{{ url_for('add_suggestions_to_plan') }}" method="POST">
+    <input type="hidden" name="week_start" value="{{ week_start }}">
+    <div class="suggestion-grid">
+        {% for meal in suggestions %}
+        <div class="suggestion-card">
+            <span class="suggestion-label">Meal {{ loop.index }}</span>
+
+            <div class="suggestion-recipe main">
+                <input type="hidden" name="recipe_ids" value="{{ meal.main.id }}">
+                {% if meal.main.image_url %}
+                <img src="{{ meal.main.image_url }}" alt="" class="suggestion-thumb">
+                {% endif %}
+                <div>
+                    <a href="{{ url_for('recipe_detail', recipe_id=meal.main.id) }}">{{ meal.main.title }}</a>
+                    <span class="suggestion-type">Main</span>
+                    {% if meal.main.is_favorite %}<span class="favorite-indicator">&#9829;</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="suggestion-recipe side">
+                <input type="hidden" name="recipe_ids" value="{{ meal.side.id }}">
+                {% if meal.side.image_url %}
+                <img src="{{ meal.side.image_url }}" alt="" class="suggestion-thumb">
+                {% endif %}
+                <div>
+                    <a href="{{ url_for('recipe_detail', recipe_id=meal.side.id) }}">{{ meal.side.title }}</a>
+                    <span class="suggestion-type">Side</span>
+                    {% if meal.side.is_favorite %}<span class="favorite-indicator">&#9829;</span>{% endif %}
+                </div>
+            </div>
+
+            {% if meal.past_pairing %}
+            <div class="pairing-badge">Paired before ({{ meal.times_paired }}x)</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-actions" style="justify-content: center; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary btn-large">Add All to Meal Plan</button>
+        <a href="{{ url_for('meal_plan') }}" class="btn btn-secondary">View Meal Plan</a>
+    </div>
+</form>
+{% endif %}
+
+{% endif %}
+{% endblock %}
