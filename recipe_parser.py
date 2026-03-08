@@ -44,11 +44,18 @@ def parse_recipe_url(url):
     except Exception as e:
         raise ValueError(f"Could not parse recipe from this URL: {e}")
 
-    # Extract data
-    title = scraper.title() or "Untitled Recipe"
+    # Extract data — wrap every field since scrapers raise NotImplementedError
+    # for unsupported sites/fields
+    try:
+        title = scraper.title() or "Untitled Recipe"
+    except Exception:
+        title = "Untitled Recipe"
 
-    # Get ingredients as list of dicts with parsed parts
-    raw_ingredients = scraper.ingredients() or []
+    try:
+        raw_ingredients = scraper.ingredients() or []
+    except Exception:
+        raw_ingredients = []
+
     ingredients = []
     for ing in raw_ingredients:
         parts = parse_ingredient_parts(ing)
@@ -59,16 +66,14 @@ def parse_recipe_url(url):
             'unit': parts['unit']
         })
 
-    # Get instructions
     try:
         instructions = scraper.instructions() or ""
-    except:
+    except Exception:
         instructions = ""
 
-    # Get image
     try:
         image_url = scraper.image()
-    except:
+    except Exception:
         image_url = None
 
     # Determine source from URL

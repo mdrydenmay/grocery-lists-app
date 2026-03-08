@@ -213,9 +213,13 @@ function renderTabContent(recipe) {
                 ${imgHtml}
             </div>
             <div class="tab-recipe-actions">
-                <a href="/recipes/${recipe.id}" class="btn btn-secondary">Full Page</a>
+                <form action="/meal-plan/add" method="POST" style="display:inline;">
+                    <input type="hidden" name="recipe_id" value="${recipe.id}">
+                    <button type="submit" class="btn btn-primary">Add to Meal Plan</button>
+                </form>
                 <button type="button" class="btn btn-secondary"
                         onclick="openCookingMode(tabCache[${recipe.id}])">Cooking Mode</button>
+                <a href="/recipes/${recipe.id}" class="btn btn-secondary">Full Page</a>
             </div>
             <div class="recipe-content">
                 <div class="recipe-ingredients">
