@@ -50,6 +50,7 @@
             <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
             <button type="submit" class="btn btn-primary">Add to Meal Plan</button>
         </form>
+        <button type="button" class="btn btn-secondary" onclick="openCookingMode(window._recipeData)">Cooking Mode</button>
         <a href="{{ url_for('add_recipe_page') }}" class="btn btn-secondary">Add Recipe</a>
         <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}" class="btn btn-secondary">Edit</a>
         <form action="{{ url_for('delete_recipe_route', recipe_id=recipe.id) }}" method="POST"
@@ -63,7 +64,15 @@
             <h2>Ingredients</h2>
             <ul>
                 {% for ingredient in recipe.ingredients %}
-                <li>{{ ingredient.raw if ingredient.raw else ingredient.name }}</li>
+                <li>
+                    {% if ingredient.qty or ingredient.unit %}
+                        {% if ingredient.qty %}<span class="ing-qty">{{ ingredient.qty | int if ingredient.qty == ingredient.qty | int else ingredient.qty }}</span> {% endif %}
+                        {% if ingredient.unit %}<span class="ing-unit">{{ ingredient.unit }}</span> {% endif %}
+                        <span class="ing-name">{{ ingredient.name }}</span>
+                    {% else %}
+                        {{ ingredient.raw if ingredient.raw else ingredient.name }}
+                    {% endif %}
+                </li>
                 {% endfor %}
             </ul>
         </div>
@@ -90,4 +99,5 @@
     {% endif %}
     <p class="recipe-meta">Added: {{ recipe.date_added[:10] }}</p>
 </div>
+<script>window._recipeData = {{ recipe | tojson }};</script>
 {% endblock %}

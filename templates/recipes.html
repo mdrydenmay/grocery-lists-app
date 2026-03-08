@@ -33,10 +33,18 @@
     </div>
 </div>
 
+<!-- Tab bar (hidden until a recipe is opened) -->
+<div id="recipe-tabs-bar" class="recipe-tabs-bar" style="display:none;">
+    <div id="tab-list" class="tab-list"></div>
+</div>
+<!-- Tab content area -->
+<div id="recipe-tab-content" class="recipe-tab-content" style="display:none;"></div>
+
 {% if recipes %}
 <div class="recipe-grid">
     {% for recipe in recipes %}
-    <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card">
+    <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" class="recipe-card"
+       data-recipe-id="{{ recipe.id }}" onclick="openRecipeTab(event, this)">
         <form action="{{ url_for('toggle_favorite_route', recipe_id=recipe.id) }}"
               method="POST" class="favorite-form" onclick="event.stopPropagation();">
             <button type="submit" class="favorite-btn {% if recipe.is_favorite %}active{% endif %}"

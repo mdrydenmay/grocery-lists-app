@@ -548,6 +548,20 @@ h1, h2, h3 {
     margin-bottom: 0.5rem;
 }
 
+.ing-qty {
+    font-weight: 700;
+    color: #024DA1;
+}
+
+.ing-unit {
+    font-weight: 400;
+    color: #666;
+}
+
+.ing-name {
+    font-weight: 400;
+}
+
 .instructions-text {
     white-space: pre-wrap;
 }
@@ -1253,6 +1267,211 @@ h1, h2, h3 {
 
 .name-corrected {
     border-bottom: 1.5px dotted #024DA1;
+}
+
+/* ============== Recipe Tabs ============== */
+.recipe-tabs-bar {
+    border-bottom: 2px solid #DDD0BC;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: #F0E6CC;
+    border-radius: 12px 12px 0 0;
+    margin-top: 1.5rem;
+}
+
+.tab-list {
+    display: flex;
+}
+
+.tab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    border-right: 1px solid #DDD0BC;
+    background: #F0E6CC;
+    font-size: 0.875rem;
+    max-width: 220px;
+    transition: background 0.15s;
+    border-top: 3px solid transparent;
+    user-select: none;
+}
+
+.tab-item:hover {
+    background: #E8DBC8;
+}
+
+.tab-item.active {
+    background: #fff;
+    border-top-color: #024DA1;
+    font-weight: 600;
+}
+
+.tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.tab-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #B09D85;
+    line-height: 1;
+    padding: 0.1rem 0.2rem;
+    flex-shrink: 0;
+    border-radius: 3px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.tab-close:hover {
+    color: #EE3823;
+    background: rgba(238, 56, 35, 0.1);
+}
+
+.recipe-tab-content {
+    background: #fff;
+    border: 2px solid #DDD0BC;
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.tab-recipe-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+/* ============== Cooking Mode ============== */
+.cooking-modal {
+    position: fixed;
+    inset: 0;
+    background: #F8ECD8;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cooking-modal-hidden {
+    display: none;
+}
+
+.cooking-modal-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 1.5rem;
+}
+
+.cooking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 0 1rem;
+    border-bottom: 2px solid #DDD0BC;
+}
+
+.cooking-header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.cooking-close {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    cursor: pointer;
+    color: #7a6a55;
+    line-height: 1;
+    padding: 0 0.25rem;
+    transition: color 0.2s;
+}
+
+.cooking-close:hover {
+    color: #EE3823;
+}
+
+.cooking-tabs {
+    display: flex;
+    border-bottom: 2px solid #DDD0BC;
+    margin-top: 1rem;
+}
+
+.cooking-tab-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #B09D85;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s;
+}
+
+.cooking-tab-btn.active {
+    color: #024DA1;
+    border-bottom-color: #024DA1;
+}
+
+.cooking-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 0;
+}
+
+.cooking-tab-hidden {
+    display: none;
+}
+
+.cooking-ingredients {
+    list-style: disc;
+    padding-left: 1.5rem;
+    font-size: 1.25rem;
+    line-height: 2;
+}
+
+.cooking-step-counter {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7a6a55;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.cooking-step-text {
+    font-size: 1.5rem;
+    line-height: 1.6;
+    min-height: 8rem;
+    margin-bottom: 3rem;
+}
+
+.cooking-step-nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.cooking-step-nav .btn {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+}
+
+.cooking-step-nav .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* ============== Utility ============== */

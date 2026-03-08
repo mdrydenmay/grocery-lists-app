@@ -7,7 +7,8 @@ Then open http://localhost:5000 in your browser.
 
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from database import (
     init_db, add_recipe, get_recipe, get_recipe_by_url, get_all_recipes,
     update_recipe, delete_recipe, toggle_favorite,
@@ -25,6 +26,16 @@ from grocery_generator import generate_grocery_list
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-key-change-in-production')
+
+APP_PASSWORD = os.environ.get('APP_PASSWORD', 'changeme')
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('authenticated'):
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated
 
 UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -56,9 +67,26 @@ def _save_upload(file):
 # Initialize database on startup
 init_db()
 
+# ============== Auth ==============
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form.get('password') == APP_PASSWORD:
+            session['authenticated'] = True
+            return redirect(request.args.get('next') or url_for('index'))
+        flash('Incorrect password.')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 # ============== Home ==============
 
 @app.route('/')
+@login_required
 def index():
     """Home page with quick access to main features."""
     recipes = get_all_recipes()[:6]  # Show recent recipes
@@ -68,6 +96,7 @@ def index():
 # ============== Recipes ==============
 
 @app.route('/recipes')
+@login_required
 def recipes():
     """Browse all recipes."""
     search = request.args.get('search', '')
@@ -86,6 +115,7 @@ def recipes():
                          favorites_only=favorites_only)
 
 @app.route('/recipes/<int:recipe_id>')
+@login_required
 def recipe_detail(recipe_id):
     """View a single recipe."""
     recipe = get_recipe(recipe_id)
@@ -95,6 +125,7 @@ def recipe_detail(recipe_id):
     return render_template('recipe_detail.html', recipe=recipe)
 
 @app.route('/recipes/add', methods=['GET', 'POST'])
+@login_required
 def add_recipe_page():
     """Add a new recipe (manual or from URL)."""
     if request.method == 'POST':
@@ -166,6 +197,7 @@ def add_recipe_page():
     return render_template('add_recipe.html')
 
 @app.route('/recipes/<int:recipe_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_recipe(recipe_id):
     """Edit an existing recipe."""
     recipe = get_recipe(recipe_id)
@@ -225,12 +257,14 @@ def edit_recipe(recipe_id):
                          ingredients_text=ingredients_text, tags_text=tags_text)
 
 @app.route('/recipes/<int:recipe_id>/toggle-favorite', methods=['POST'])
+@login_required
 def toggle_favorite_route(recipe_id):
     """Toggle favorite status of a recipe."""
     toggle_favorite(recipe_id)
     return redirect(request.referrer or url_for('recipes'))
 
 @app.route('/recipes/<int:recipe_id>/delete', methods=['POST'])
+@login_required
 def delete_recipe_route(recipe_id):
     """Delete a recipe."""
     recipe = get_recipe(recipe_id)
@@ -242,6 +276,7 @@ def delete_recipe_route(recipe_id):
 # ============== Meal Planning ==============
 
 @app.route('/meal-plan')
+@login_required
 def meal_plan():
     """View and manage weekly meal plan."""
     week_start = request.args.get('week', get_week_start())
@@ -251,6 +286,7 @@ def meal_plan():
                          plan=plan, recipes=all_recipes, week_start=week_start)
 
 @app.route('/meal-plan/add', methods=['POST'])
+@login_required
 def add_to_plan():
     """Add a recipe to the meal plan."""
     recipe_id = request.form.get('recipe_id', type=int)
@@ -260,6 +296,7 @@ def add_to_plan():
     return redirect(url_for('meal_plan', week=week_start))
 
 @app.route('/meal-plan/remove', methods=['POST'])
+@login_required
 def remove_from_plan():
     """Remove a recipe from the meal plan."""
     recipe_id = request.form.get('recipe_id', type=int)
@@ -269,6 +306,7 @@ def remove_from_plan():
     return redirect(url_for('meal_plan', week=week_start))
 
 @app.route('/meal-plan/clear', methods=['POST'])
+@login_required
 def clear_plan():
     """Clear the meal plan for a week."""
     week_start = request.form.get('week_start', get_week_start())
@@ -278,6 +316,7 @@ def clear_plan():
 # ============== Grocery List ==============
 
 @app.route('/grocery-list')
+@login_required
 def grocery_list():
     """Generate and view grocery list from meal plan."""
     week_start = request.args.get('week', get_week_start())
@@ -297,6 +336,7 @@ def grocery_list():
                          grocery_list=grocery_data, week_start=week_start, plan=plan)
 
 @app.route('/grocery/set-store', methods=['POST'])
+@login_required
 def set_grocery_store():
     """Set a manual store override for an ingredient."""
     ingredient_name = request.form.get('ingredient_name', '').strip()
@@ -307,6 +347,7 @@ def set_grocery_store():
     return redirect(url_for('grocery_list', week=week_start))
 
 @app.route('/grocery/set-name', methods=['POST'])
+@login_required
 def set_grocery_name():
     """Set a name correction override for an ingredient."""
     original_name = request.form.get('original_name', '').strip()
@@ -323,6 +364,7 @@ def set_grocery_name():
 # ============== Store Settings ==============
 
 @app.route('/settings/stores')
+@login_required
 def store_settings():
     """View and manage store assignment and name correction overrides."""
     overrides = get_store_overrides()
@@ -331,6 +373,7 @@ def store_settings():
                          name_overrides=name_overrides)
 
 @app.route('/settings/stores/delete/<int:override_id>', methods=['POST'])
+@login_required
 def delete_store_override_route(override_id):
     """Delete a store override."""
     delete_store_override(override_id)
@@ -338,6 +381,7 @@ def delete_store_override_route(override_id):
     return redirect(url_for('store_settings'))
 
 @app.route('/settings/names/delete/<int:override_id>', methods=['POST'])
+@login_required
 def delete_name_override_route(override_id):
     """Delete a name correction override."""
     delete_name_override(override_id)
@@ -347,6 +391,7 @@ def delete_name_override_route(override_id):
 # ============== Pantry ==============
 
 @app.route('/pantry')
+@login_required
 def pantry():
     """View and manage pantry staples."""
     staples = get_staples()
@@ -360,6 +405,7 @@ def pantry():
     return render_template('pantry.html', grouped_staples=grouped)
 
 @app.route('/pantry/add', methods=['POST'])
+@login_required
 def add_pantry_staple():
     """Add a new pantry staple."""
     ingredient = request.form.get('ingredient', '').strip()
@@ -370,18 +416,21 @@ def add_pantry_staple():
     return redirect(url_for('pantry'))
 
 @app.route('/pantry/toggle-low/<int:staple_id>', methods=['POST'])
+@login_required
 def toggle_low(staple_id):
     """Toggle the low status of a staple."""
     toggle_staple_low(staple_id)
     return redirect(url_for('pantry'))
 
 @app.route('/pantry/delete/<int:staple_id>', methods=['POST'])
+@login_required
 def delete_pantry_staple(staple_id):
     """Delete a pantry staple."""
     delete_staple(staple_id)
     return redirect(url_for('pantry'))
 
 @app.route('/pantry/enable-quantity/<int:staple_id>', methods=['POST'])
+@login_required
 def enable_quantity(staple_id):
     """Enable quantity tracking for a staple."""
     initial = request.form.get('initial_quantity', 0, type=int)
@@ -389,12 +438,14 @@ def enable_quantity(staple_id):
     return redirect(url_for('pantry'))
 
 @app.route('/pantry/disable-quantity/<int:staple_id>', methods=['POST'])
+@login_required
 def disable_quantity(staple_id):
     """Disable quantity tracking for a staple."""
     disable_quantity_tracking(staple_id)
     return redirect(url_for('pantry'))
 
 @app.route('/pantry/set-quantity/<int:staple_id>', methods=['POST'])
+@login_required
 def update_quantity(staple_id):
     """Update the quantity of a staple."""
     quantity = request.form.get('quantity', 0, type=int)
@@ -404,6 +455,7 @@ def update_quantity(staple_id):
 # ============== Meal Suggestions ==============
 
 @app.route('/suggest', methods=['GET', 'POST'])
+@login_required
 def suggest_meals_page():
     """Meal suggestion page."""
     suggestions = None
@@ -440,6 +492,7 @@ def suggest_meals_page():
                          week_start=get_week_start())
 
 @app.route('/suggest/add-all', methods=['POST'])
+@login_required
 def add_suggestions_to_plan():
     """Add all suggested recipes to the current meal plan."""
     week_start = request.form.get('week_start', get_week_start())
@@ -452,12 +505,23 @@ def add_suggestions_to_plan():
 # ============== API Endpoints ==============
 
 @app.route('/api/recipes')
+@login_required
 def api_recipes():
     """JSON API for recipes."""
     recipes = get_all_recipes()
     return jsonify(recipes)
 
+@app.route('/api/recipes/<int:recipe_id>')
+@login_required
+def api_recipe_detail(recipe_id):
+    """JSON API for a single recipe."""
+    recipe = get_recipe(recipe_id)
+    if not recipe:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify(recipe)
+
 @app.route('/api/grocery-list')
+@login_required
 def api_grocery_list():
     """JSON API for grocery list."""
     week_start = request.args.get('week', get_week_start())

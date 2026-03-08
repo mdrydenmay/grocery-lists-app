@@ -19,6 +19,7 @@
             <a href="{{ url_for('grocery_list') }}" {% if request.endpoint == 'grocery_list' %}class="active"{% endif %}>Grocery List</a>
             <a href="{{ url_for('pantry') }}" {% if request.endpoint == 'pantry' %}class="active"{% endif %}>Pantry</a>
             <a href="{{ url_for('store_settings') }}" {% if request.endpoint == 'store_settings' %}class="active"{% endif %}>Settings</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </nav>
 
@@ -33,6 +34,33 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Cooking Mode Modal -->
+    <div id="cooking-modal" class="cooking-modal cooking-modal-hidden" role="dialog" aria-modal="true" aria-label="Cooking Mode">
+        <div class="cooking-modal-inner">
+            <div class="cooking-header">
+                <h2 class="cooking-title"></h2>
+                <button class="cooking-close" onclick="closeCookingMode()" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="cooking-tabs">
+                <button class="cooking-tab-btn active" data-tab="ingredients" onclick="switchCookingTab('ingredients')">Ingredients</button>
+                <button class="cooking-tab-btn" data-tab="steps" onclick="switchCookingTab('steps')">Steps</button>
+            </div>
+            <div class="cooking-body">
+                <div class="cooking-tab-content" data-tab="ingredients">
+                    <ul class="cooking-ingredients"></ul>
+                </div>
+                <div class="cooking-tab-content cooking-tab-hidden" data-tab="steps">
+                    <p class="cooking-step-counter"></p>
+                    <div class="cooking-step-text"></div>
+                    <div class="cooking-step-nav">
+                        <button class="btn btn-secondary cooking-prev">&#8592; Prev</button>
+                        <button class="btn btn-primary cooking-next">Next &#8594;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
